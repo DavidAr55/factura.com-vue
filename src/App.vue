@@ -1,10 +1,12 @@
+<!-- src/App.vue -->
 <script setup>
-
+  // Scripts for the root path
 </script>
 
 <template>
-  <h1>Hello Vue</h1>
+  <router-view />
 </template>
 
 <style scoped>
+  /* Style for the root path */
 </style>
