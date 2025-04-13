@@ -1,33 +1,15 @@
-<!-- src/views/Home.vue -->
 <script setup>
-  import { ref } from 'vue';
-  import { RouterLink } from 'vue-router';
+import { ref } from 'vue';
 
-  const BASE_URL = "http://127.0.0.1:8000/api"
-  
-  const loadStatus = async () => {
-    const response = await fetch(`${BASE_URL}/v1/status`, {
-      method: 'GET',
-      mode: 'cors',
-      headers: {
-        'Accept': 'application/json',
-        'Content-Type': 'application/json',
-      },
-    })
-    const data = await response.json();
-
-    console.log('Response: ', data);
-  }
-
-  loadStatus();
+const BASE_URL = "http://127.0.0.1:8000/api";
+const health = ref(null);
+const errorMessage = ref('');
 </script>
 
 <template>
-  <div class="w-full h-screen flex justify-center items-center">
-    <h1 class="text-5xl font-bold text-gray-800">Factura.com</h1>
+  <div class="w-full h-screen flex flex-col justify-center items-center">
+    <h1 class="text-5xl font-bold text-gray-800 mb-4">Factura.com</h1>
   </div>
 </template>
 
-<style scoped>
-  
-</style>
+<style scoped></style>
