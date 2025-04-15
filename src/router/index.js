@@ -1,5 +1,6 @@
 import { createRouter, createWebHistory } from "vue-router";
 import Home from "../views/Home.vue";
+import Create from "../views/Create.vue";
 import Cfdi from "../views/Cfdi.vue";
 
 // Define the application routes with vue-router
@@ -12,6 +13,11 @@ const routes = [
         path: '/home',
         name: 'Home',
         component: Home
+    },
+    {
+        path: '/create',
+        name: 'Create',
+        component: Create
     },
     {
         path: '/cfdi/:uuid',

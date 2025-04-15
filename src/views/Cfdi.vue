@@ -25,7 +25,6 @@ const loadCfdi = async () => {
   try {
     loading.value = true;
     const response = await fetch(`${BASE_URL}/v1/cfdi/${uuid.value}`, {
-      method: 'GET',
       headers: {
         'Content-Type': 'application/json'
       }
@@ -89,6 +88,7 @@ const sendCfdiByEmail = async (uid, link) => {
 
 // Función para cancelar el CFDI usando Swal2 con input select
 const cancelCfdi = async (uid, link) => {
+  // Seleccionar el motivo de cancelación
   const { value: motivo } = await Swal.fire({
     title: 'Seleccione el motivo de cancelación',
     input: 'select',
@@ -110,7 +110,7 @@ const cancelCfdi = async (uid, link) => {
     const { value: repUuid } = await Swal.fire({
       title: 'Ingrese el UUID de reemplazo',
       input: 'text',
-      inputPlaceholder: 'ingresa un UUID',
+      inputPlaceholder: 'Ingresa un UUID',
       showCancelButton: true,
       confirmButtonText: 'Aceptar'
     });
@@ -123,27 +123,47 @@ const cancelCfdi = async (uid, link) => {
     substituteFolio: replacementUuid
   };
 
-  // Petición para cancelar el CFDI
-  const response = await fetch(link, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  // Mostrar loader mientras se procesa la cancelación
+  Swal.fire({
+    title: 'Cancelando CFDI...',
+    html: 'Por favor, espera',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
   });
 
-  // Procesar la respuesta
-  const result = await response.json();
-
-  if (response.ok && result.response === 'success') {
-    Swal.fire({
-      icon: 'success',
-      title: 'Cancelación exitosa',
-      text: result.message
+  // Petición para cancelar el CFDI
+  try {
+    const response = await fetch(link, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-  } else {
-    Swal.fire({
+
+    const result = await response.json();
+    Swal.close();
+
+    if (response.ok && result.response === 'success') {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cancelación exitosa',
+        text: result.message
+      });
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error al cancelar',
+        text: result.message || 'Ocurrió un error inesperado'
+      });
+    }
+  } catch (error) {
+    console.error('Error en la cancelación:', error);
+    Swal.close();
+    await Swal.fire({
       icon: 'error',
-      title: 'Error al cancelar',
-      text: result.message || 'Ocurrió un error inesperado'
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor. Intenta de nuevo más tarde.'
     });
   }
 
@@ -153,8 +173,7 @@ const cancelCfdi = async (uid, link) => {
 </script>
 
 <template>
-  <!-- Contenedor Principal -->
-  <div class="container mx-auto p-4">
+  <div class="container mx-auto">
     <!-- Título Principal -->
     <div class="bg-white w-full h-full pt-4 mb-6 flex flex-col justify-center items-center rounded-xl shadow">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
@@ -235,8 +254,4 @@ const cancelCfdi = async (uid, link) => {
   </div>
 </template>
 
-<style scoped>
-.container {
-  max-width: 800px;
-}
-</style>
+<style scoped></style>

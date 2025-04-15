@@ -130,27 +130,45 @@ const cancelCfdi = async (uid, link) => {
     substituteFolio: replacementUuid
   };
 
-  // 1) Hacemos la petición
-  const response = await fetch(link, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
+  Swal.fire({
+    title: 'Cancelando CFDI...',
+    html: 'Por favor, espera',
+    allowOutsideClick: false,
+    didOpen: () => {
+      Swal.showLoading();
+    }
   });
 
-  // 2) Leemos el JSON de respuesta
-  const result = await response.json();
-
-  if (response.ok && result.response === 'success') {
-    Swal.fire({
-      icon: 'success',
-      title: 'Cancelación exitosa',
-      text: result.message
+  try {
+    const response = await fetch(link, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(data)
     });
-  } else {
-    Swal.fire({
+
+    const result = await response.json();
+    Swal.close();
+
+    if (response.ok && result.response === 'success') {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Cancelación exitosa',
+        text: result.message
+      });
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error al cancelar',
+        text: result.message || 'Ocurrió un error inesperado'
+      });
+    }
+  } catch (error) {
+    console.error('Error en la cancelación:', error);
+    Swal.close();
+    await Swal.fire({
       icon: 'error',
-      title: 'Error al cancelar',
-      text: result.message || 'Ocurrió un error inesperado'
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor. Intenta de nuevo más tarde.'
     });
   }
 
@@ -183,9 +201,9 @@ function formatTotal(total) {
 
   <!-- Botón para Crear CFDI -->
   <div class="w-full flex flex-col justify-center rounded-xl shadow my-7">
-    <a href="" class="p-2.5 rounded-md bg-emerald-500 text-white font-bold text-center decoration-0">
+    <router-link :to="{ name: 'Create' }" class="p-2.5 rounded-md bg-emerald-500 text-white font-bold text-center decoration-0">
       Crear CFDI
-    </a>
+    </router-link>
   </div>
 
   <!-- Contenedor Principal CFDI -->
