@@ -49,14 +49,60 @@ const searchFolio = (event) => {
   }
 };
 
-const cancelCfdi = async (uuid) => {
+const sendCfdiByEmail = async (uid, link) => {
+  try {
+    Swal.fire({
+      title: 'Enviando correo...',
+      html: 'Por favor, espera',
+      allowOutsideClick: false,
+      didOpen: () => {
+        Swal.showLoading();
+      }
+    });
+
+    const response = await fetch(link, {
+      method: "POST",
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    });
+
+    const result = await response.json();
+
+    Swal.close();
+
+    if (response.ok && result.response === 'success') {
+      await Swal.fire({
+        icon: 'success',
+        title: 'Correo enviado',
+        text: result.message,
+      });
+    } else {
+      await Swal.fire({
+        icon: 'error',
+        title: 'Error al enviar',
+        text: result.message || 'Ocurrió un error inesperado',
+      });
+    }
+  } catch (err) {
+    console.error('Error enviando por correo:', err);
+    Swal.close();
+    await Swal.fire({
+      icon: 'error',
+      title: 'Error de conexión',
+      text: 'No se pudo conectar al servidor. Intenta de nuevo más tarde.',
+    });
+  }
+};
+
+const cancelCfdi = async (uid, link) => {
   const { value: motivo } = await Swal.fire({
     title: 'Seleccione el motivo de cancelación',
     input: 'select',
     inputOptions: {
       '01': '01 - Comprobante emitido con errores con relación',
       '02': '02 - Comprobante emitido con errores sin relación',
-      '03': '03 - No se llevó; a cabo la operación',
+      '03': '03 - No se llevó a cabo la operación',
       '04': '04 - Operación nominativa relacionada en la factura global'
     },
     inputPlaceholder: 'Seleccione un motivo',
@@ -64,55 +110,51 @@ const cancelCfdi = async (uuid) => {
     confirmButtonText: 'Continuar'
   });
 
-  if (!motivo) {
-    return;
-  }
+  if (!motivo) return;
 
   let replacementUuid = null;
-  // Si el motivo es "01", mostramos un segundo modal para seleccionar el UUID de reemplazo
   if (motivo === '01') {
     const { value: repUuid } = await Swal.fire({
-      title: 'Seleccione el UUID de reemplazo',
-      input: 'select',
-      // Aquí debes definir las opciones de UUID; en este ejemplo se usan valores fijos.
-      inputOptions: {
-        'uuid-1': 'UUID 1',
-        'uuid-2': 'UUID 2',
-        'uuid-3': 'UUID 3'
-      },
-      inputPlaceholder: 'Seleccione un UUID',
+      title: 'Ingrese el UUID de reemplazo',
+      input: 'text',
+      inputPlaceholder: 'ingresa un UUID',
       showCancelButton: true,
       confirmButtonText: 'Aceptar'
     });
-
-    // Si el usuario cancela o no selecciona, detenemos el proceso
-    if (!repUuid) {
-      return;
-    }
+    if (!repUuid) return;
     replacementUuid = repUuid;
   }
 
-  // Preparamos la data a enviar (según tu API, podrías enviar el motivo y el UUID de reemplazo si aplica)
   const data = {
-    motivo: motivo,
-    replacementUuid: replacementUuid
+    reason: motivo,
+    substituteFolio: replacementUuid
   };
 
-  // Realizamos la solicitud de cancelación enviando la data en el body en formato JSON
-  const response = await fetch(`${BASE_URL}/v1/cfdi/${uuid}/cancel`, {
+  // 1) Hacemos la petición
+  const response = await fetch(link, {
     method: 'POST',
-    headers: {
-      'Content-type': 'application/json'
-    },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data)
   });
 
-  // Podemos mostrar un mensaje al usuario según el resultado de la operación
-  if (response.ok) {
-    Swal.fire('Cancelación exitosa', '', 'success');
+  // 2) Leemos el JSON de respuesta
+  const result = await response.json();
+
+  if (response.ok && result.response === 'success') {
+    Swal.fire({
+      icon: 'success',
+      title: 'Cancelación exitosa',
+      text: result.message
+    });
   } else {
-    Swal.fire('Error al cancelar', '', 'error');
+    Swal.fire({
+      icon: 'error',
+      title: 'Error al cancelar',
+      text: result.message || 'Ocurrió un error inesperado'
+    });
   }
+
+  loadCfdis();
 };
 
 watch(list_page, () => {
@@ -197,7 +239,6 @@ function formatTotal(total) {
             <p :class="[ cfdi.status !== 'cancelada' ? 'text-emerald-500' : 'text-red-500' ]">
               <span class="font-semibold">Estado:</span> {{ cfdi.status }}
             </p>
-            <p><span class="font-semibold">Uuid:</span> {{ cfdi.uuid }}</p>
           </div>
 
           <!-- Columna Derecha: Acciones -->
@@ -206,21 +247,21 @@ function formatTotal(total) {
               cfdi.status !== 'cancelada' ? 'border-emerald-500' : 'border-red-500'
               ]">
             <!-- Acción: Ver CFDI -->
-            <button v-if="cfdi.links.self" @click="window.open(cfdi.links.self, '_blank')"
+            <router-link v-if="cfdi.links.self" :to="{ name: 'Cfdi', params: { uuid: cfdi.uuid } }"
                     class="flex flex-col justify-center items-center text-blue-500 hover:text-blue-700 transition">
               <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
               <span class="text-sm mt-1">Ver</span>
-            </button>
+            </router-link>
 
             <!-- Acción: Enviar email -->
-            <button v-if="cfdi.links.email" @click="window.open(cfdi.links.email, '_blank')"
+            <button v-if="cfdi.links.email" v-on:click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
                     class="flex flex-col justify-center items-center text-emerald-500 hover:text-emerald-700 transition">
               <FontAwesomeIcon :icon="['fas', 'envelope']" class="text-2xl" />
               <span class="text-sm mt-1">Enviar</span>
             </button>
             
             <!-- Acción: Cancelar (solo si es posible cancelar el CFDI) -->
-            <button v-if="cfdi.links.cancel" v-on:click="cancelCfdi(cfdi.uuid)"
+            <button v-if="cfdi.links.cancel" v-on:click="cancelCfdi(cfdi.uid, cfdi.links.cancel)"
                     class="flex flex-col justify-center items-center text-red-500 hover:text-red-700 transition">
               <FontAwesomeIcon :icon="['fas', 'times-circle']" class="text-2xl" />
               <span class="text-sm mt-1">Cancelar</span>
