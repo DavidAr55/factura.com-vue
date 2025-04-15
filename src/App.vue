@@ -1,10 +1,11 @@
 <!-- src/App.vue -->
-<script setup> 
-import { ref } from 'vue';
+<script setup>
+import { ref, onMounted } from 'vue';
 
-const BASE_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || "http://127.0.0.1:8000/api";
 const health = ref(null);
 const errorMessage = ref('');
+const isLoading = ref(true);
 
 const loadStatus = async () => {
   try {
@@ -28,24 +29,34 @@ const loadStatus = async () => {
     console.error('Error in server health check:', error);
     health.value = null;
     errorMessage.value = 'No se pudo conectar al servidor. Intenta más tarde.';
+  } finally {
+    isLoading.value = false;
   }
 };
 
-loadStatus();
+onMounted(() => {
+  loadStatus();
+});
 </script>
 
 <template>
-  <div class="w-full h-screen flex flex-col justify-center items-center">
-    <div v-if="errorMessage" class="text-red-600">
-      <h3 class="text-3xl font-bold mb-4">{{ errorMessage }}</h3>
+  <div class="w-full h-full p-3">
+    <!-- Caso de error -->
+    <div v-if="errorMessage" class="text-red-600 w-full h-[97vh] flex justify-center items-center">
+      <h3 class="text-xl text-center font-bold mb-4">{{ errorMessage }}</h3>
     </div>
 
+    <!-- Estado de carga -->
+    <div v-else-if="isLoading" class="w-full h-[97vh] flex justify-center items-center">
+      <svg class="animate-spin h-8 w-8 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+      </svg>
+    </div>
+
+    <!-- Estado saludable del servidor -->
     <div v-else-if="health">
       <router-view />
-    </div>
-
-    <div v-else>
-      <h3 class="text-3xl font-bold text-gray-800 mb-4">Cargando estado del servidor…</h3>
     </div>
   </div>
 </template>
