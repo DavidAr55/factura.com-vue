@@ -54,10 +54,10 @@ async function loadAllCatalogs() {
     cfdiUsages.value     = usagesData;
     paymentMethods.value = methodsData;
 
-    // Defaults
     if (typesData.length) {
-      typeSelected.value   = typesData[0].key;
-      serialSelected.value = typesData[0].serial;
+      const defaultType = typesData.find(t => t.SerieName === "F") || typesData[0];
+      typeSelected.value   = defaultType.SerieType;
+      serialSelected.value = defaultType.SerieID;
     }
     if (clientsData.length)  clientSelected.value = clientsData[0].UID;
     if (usagesData.length)   usageSelected.value  = usagesData[0].key;
@@ -72,8 +72,8 @@ async function loadAllCatalogs() {
 
 // Watch para la serie de CFDI
 watch(typeSelected, newKey => {
-  const t = cfdiTypes.value.find(x => x.key === newKey);
-  serialSelected.value = t ? t.serial : '';
+  const t = cfdiTypes.value.find(x => x.SerieType === newKey);
+  serialSelected.value = t ? t.SerieName : '';
 });
 
 // Función para agregar un concepto al formulario
@@ -191,8 +191,8 @@ loadAllCatalogs();
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
             v-model="typeSelected"
           >
-            <option v-for="cfdiType in cfdiTypes" :key="cfdiType.key" :value="cfdiType.key">
-              {{ cfdiType.type }} - {{ cfdiType.serial }}
+            <option v-for="cfdiType in cfdiTypes" :key="cfdiType.SerieType" :value="cfdiType.SerieType">
+              {{ cfdiType.SerieDescription }} - {{ cfdiType.SerieName }}
             </option>
           </select>
         </div>
