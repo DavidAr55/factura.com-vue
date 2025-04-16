@@ -262,7 +262,7 @@ function formatTotal(total) {
               cfdi.status !== 'cancelada' ? 'border-emerald-500' : 'border-red-500'
             ]">
               <!-- Acción: Ver CFDI -->
-              <router-link v-if="cfdi.links.self" :to="{ name: 'Cfdi', params: { uuid: cfdi.uuid } }"
+              <router-link v-if="cfdi.links.self" :to="{ name: 'Show', params: { uuid: cfdi.uuid } }"
                 class="flex flex-col justify-center items-center text-blue-500 hover:text-blue-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
                 <span class="text-sm mt-1">Ver</span>
