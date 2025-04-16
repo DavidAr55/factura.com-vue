@@ -215,7 +215,7 @@ function formatTotal(total) {
       <!-- Input de Búsqueda -->
       <div class="w-full flex justify-center mb-4">
         <input type="text" placeholder="Buscar por Folio..." @input="searchFolio"
-          class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+          class="w-full p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
       </div>
 
       <!-- Área de listado con Skeleton -->
