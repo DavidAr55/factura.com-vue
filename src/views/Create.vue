@@ -179,7 +179,7 @@ loadAllCatalogs();
     </div>
 
     <!-- Formulario principal -->
-    <form v-else @submit.prevent="submitForm" class="bg-white shadow-md rounded p-4">
+    <form v-else @submit.prevent="submitForm" class="bg-white shadow-md rounded-xl p-4">
       <!-- Sección Datos del Receptor y CFDI -->
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <!-- Tipo de CFDI -->

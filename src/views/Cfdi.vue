@@ -182,7 +182,7 @@ const cancelCfdi = async (uid, link) => {
     <!-- Skeleton Loader o Contenido -->
     <div v-if="loading" class="space-y-4">
       <!-- Card Skeleton -->
-      <div class="animate-pulse bg-white rounded-lg shadow p-6">
+      <div class="animate-pulse bg-white rounded-xl shadow p-6">
         <div class="h-6 w-1/2 bg-gray-300 rounded mb-4"></div>
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -210,7 +210,7 @@ const cancelCfdi = async (uid, link) => {
     </div>
 
     <!-- Contenido con Información del CFDI -->
-    <div v-else class="bg-white rounded-lg shadow p-6">
+    <div v-else class="bg-white rounded-xl shadow p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Detalle del CFDI</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
