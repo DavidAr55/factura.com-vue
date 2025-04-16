@@ -1,75 +1,89 @@
 <script setup>
-import { reactive, ref, watch } from 'vue';
+import { reactive, ref, watch, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
-
 const BASE_URL = "http://127.0.0.1:8000/api";
 
 // Listas reactivas
 const cfdiTypes = ref([]);
 const clients = ref([]);
 const cfdiUsages = ref([]);
+const paymentTerms = ref([]);
 const paymentMethods = ref([]);
+const paymentCurrencies = ref([]);
+const unities = ref([]);
 
-// Selecciones
+// Selecciones dinámicas
 const typeSelected = ref(null);
-// Definimos serialSelected como objeto reactivo con dos propiedades: id y name
 const serialSelected = reactive({ id: '', name: '' });
 const clientSelected = ref(null);
 const usageSelected = ref(null);
+const termSelected = ref(null);
 const methodSelected = ref(null);
+const currencySelected = ref(null);
+const unitySelected = ref(null);
 
 // Estado de carga
 const loading = ref(true);
 
-// Formulario
+// Formulario dinámico
 const form = reactive({ Conceptos: [] });
 
-// Campos hardcodeados del JSON
+// Solo campo hardcodeado: Receptor UID
 const receptor = reactive({
-  UID: "60cba20d024df",
-  ResidenciaFiscal: ""
+  UID: '60cba20d024df'
 });
-const formaPago = ref("03");
-const moneda = ref("MXN");
 
-// Helper para fetch + JSON
+// Helper fetch
 async function fetchJson(path) {
-  const response = await fetch(`${BASE_URL}${path}`, {
+  const res = await fetch(`${BASE_URL}${path}`, {
     headers: { 'Content-Type': 'application/json' }
   });
-  if (!response.ok) throw new Error(`Error ${response.status} en ${path}`);
-  return response.json();
+  if (!res.ok) throw new Error(`Error ${res.status} en ${path}`);
+  return res.json();
 }
 
-// Carga concurrente
+// Carga catálogos
 async function loadAllCatalogs() {
   try {
-    const [typesData, clientsData, usagesData, methodsData] = await Promise.all([
-      fetchJson('/v1/cfdi-types'),
-      fetchJson('/v1/clients'),
-      fetchJson('/v1/cfdi-usage'),
-      fetchJson('/v1/payment-methods'),
-    ]);
+    const [typesData, clientsData, usagesData, termsData, methodsData, currencyData, unitData] =
+      await Promise.all([
+        fetchJson('/v1/cfdi-types'),
+        fetchJson('/v1/clients'),
+        fetchJson('/v1/cfdi-usage'),
+        fetchJson('/v1/payment-terms'),
+        fetchJson('/v1/payment-methods'),
+        fetchJson('/v1/payment-currency'),
+        fetchJson('/v1/unit'),
+      ]);
 
     cfdiTypes.value = typesData;
     clients.value = clientsData;
     cfdiUsages.value = usagesData;
+    paymentTerms.value = termsData;
     paymentMethods.value = methodsData;
+    paymentCurrencies.value = currencyData;
+    unities.value = unitData;
 
+    // Inicializaciones dinámicas
     if (typesData.length) {
-      // Se busca el tipo por alguna condición o se toma el primero
-      const defaultType = typesData.find(t => t.SerieName === "F") || typesData[0];
-      typeSelected.value = defaultType.SerieType;
-      serialSelected.id = defaultType.SerieID;
-      serialSelected.name = defaultType.SerieName;
+      const d = typesData[0];
+      typeSelected.value = d.SerieType;
+      serialSelected.id = d.SerieID;
+      serialSelected.name = d.SerieName;
     }
     if (clientsData.length) clientSelected.value = clientsData[0].UID;
     if (usagesData.length) usageSelected.value = usagesData[0].key;
+    if (termsData.length) termSelected.value = termsData[0].key;
     if (methodsData.length) methodSelected.value = methodsData[0].key;
 
+    // Moneda predeterminada MXN
+    const defCur = currencyData.find(c => c.key === 'MXN') || currencyData[0];
+    currencySelected.value = defCur?.key || null;
+
+    if (unitData.length) unitySelected.value = unitData[0].key;
   } catch (err) {
     console.error('Error cargando catálogos:', err);
   } finally {
@@ -77,105 +91,70 @@ async function loadAllCatalogs() {
   }
 }
 
-// Watch para la serie de CFDI
+// Watchers
 watch(typeSelected, newKey => {
   const t = cfdiTypes.value.find(x => x.SerieType === newKey);
-  serialSelected.id = t ? t.SerieID : '';
-  serialSelected.name = t ? t.SerieName : '';
+  serialSelected.id = t?.SerieID || '';
+  serialSelected.name = t?.SerieName || '';
 });
 
-// Función para agregar un concepto al formulario
+const disableMethodSelect = computed(() => termSelected.value !== 'PUE');
+watch(termSelected, newTerm => {
+  if (newTerm !== 'PUE') methodSelected.value = null;
+});
+
+// Conceptos dinámicos
 const addConcepto = () => {
   form.Conceptos.push({
     ClaveProdServ: '',
-    Cantidad: '',
-    ClaveUnidad: '',
-    Unidad: '',
-    ValorUnitario: '',
+    Cantidad: null,
+    ClaveUnidad: null,
+    Unidad: null,
+    ValorUnitario: null,
     Descripcion: '',
     ObjetoImp: ''
   });
 };
-
-// Función para eliminar un concepto (mínimo 1)
 const removeConcepto = idx => {
   if (form.Conceptos.length > 1) form.Conceptos.splice(idx, 1);
 };
 
-// Función para enviar el formulario mediante POST a la API
+// Envío
 const submitForm = async () => {
-  // Se arma el payload con las claves requeridas por el backend
   const payload = {
     Receptor: receptor,
     TipoDocumento: typeSelected.value,
     UsoCFDI: usageSelected.value,
-    Serie: serialSelected.id, // Se envía el id, no serialSelected.value
-    FormaPago: formaPago.value,
-    MetodoPago: methodSelected.value,
-    Moneda: moneda.value,
+    Serie: serialSelected.id,
+    FormaPago: termSelected.value === 'PUE' ? methodSelected.value : null,
+    MetodoPago: termSelected.value,
+    Moneda: currencySelected.value,
     Conceptos: form.Conceptos,
   };
 
   try {
-    Swal.fire({
-      title: 'Generando el CFDI...',
-      html: 'Por favor, espera',
-      allowOutsideClick: false,
-      didOpen: () => {
-        Swal.showLoading();
-      }
+    Swal.fire({ title: 'Generando CFDI…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
+    const res = await fetch(`${BASE_URL}/v1/cfdi`, {
+      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
     });
-
-    const response = await fetch(`${BASE_URL}/v1/cfdi`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify(payload)
-    });
-
-    if (!response.ok) throw new Error(`Error HTTP: ${response.status}`);
-
-    const result = await response.json();
-
+    if (!res.ok) throw new Error(res.statusText);
+    const data = await res.json();
     Swal.close();
-
-    if (result.response === 'success') {
-      await Swal.fire({
-        icon: 'success',
-        title: 'CFDI generado',
-        text: result.message,
-      });
+    if (data.response === 'success') {
+      await Swal.fire({ icon: 'success', title: 'CFDI generado', text: data.message });
       router.push('/home');
     } else {
-      await Swal.fire({
-        icon: 'error',
-        title: 'Error al generar CFDI',
-        text: result.message || 'Ocurrió un error inesperado',
-      });
+      await Swal.fire({ icon: 'error', title: 'Error', text: data.message });
     }
-  } catch (err) {
-    console.error("Error generando CFDI:", err);
+  } catch (e) {
+    console.error(e);
     Swal.close();
-    await Swal.fire({
-      icon: 'error',
-      title: 'Error de conexión',
-      text: 'No se pudo conectar al servidor. Intenta de nuevo más tarde.',
-    });
+    await Swal.fire({ icon: 'error', title: 'Error de conexión' });
   }
 };
 
-// Inicialización: agrega un concepto con datos de prueba y carga los catálogos
-form.Conceptos.push({
-  ClaveProdServ: '43232408',
-  Cantidad: 5,
-  ClaveUnidad: 'E48',
-  Unidad: 'Unidad de servicio',
-  ValorUnitario: 200,
-  Descripcion: 'Lorem ipsum dolor sit, amet consectetur adipisicing elit. Magni, unde possimus illum hic aperiam doloribus maiores similique aliquam optio labore incidunt quas. Distinctio earum molestias vitae mollitia quaerat nesciunt nam?',
-  ObjetoImp: '01'
-});
-
+// Init
+addConcepto();
 loadAllCatalogs();
 </script>
 
@@ -217,34 +196,20 @@ loadAllCatalogs();
     <!-- Formulario principal -->
     <form v-else @submit.prevent="submitForm" class="bg-white shadow-md rounded-xl p-4">
       <!-- Sección Datos del Receptor y CFDI -->
+      <h2 class="text-xl font-medium text-gray-800 mb-4">Nuevo CFDI 4.0</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
         <!-- Tipo de CFDI -->
-        <div>
-          <h2 class="text-xl font-medium text-gray-800 mb-4">Nuevo CFDI 4.0</h2>
-        </div>
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="TipoDocumento">
             Tipo de CFDI <span class="text-red-500">*</span>
           </label>
           <select name="TipoDocumento" id="TipoDocumento"
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            v-model="typeSelected">
+            v-model="typeSelected"
+          >
             <option v-for="cfdiType in cfdiTypes" :key="cfdiType.SerieType" :value="cfdiType.SerieType">
               {{ cfdiType.SerieDescription }} - {{ cfdiType.SerieName }}
             </option>
-          </select>
-        </div>
-        <!-- Fecha del CFDI -->
-        <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="FechaFromAPI">
-            Fecha de CFDI
-          </label>
-          <select name="FechaFromAPI" id="FechaFromAPI"
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors">
-            <option value="today">Timbrar con fecha actual</option>
-            <option value="yesterday">Timbrar con fecha de ayer</option>
-            <option value="two_days_ago">Timbrar con fecha de hace dos días</option>
-            <option value="three_days_ago">Timbrar con fecha de hace tres días</option>
           </select>
         </div>
         <!-- Cliente (seleccionado pero no enviado al backend) -->
@@ -254,7 +219,8 @@ loadAllCatalogs();
           </label>
           <select name="cliente" id="cliente"
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            v-model="clientSelected">
+            v-model="clientSelected"
+          >
             <option v-for="client in clients" :key="client.UID" :value="client.UID">
               {{ client.RFC }} - {{ client.RazonSocial }}
             </option>
@@ -266,7 +232,8 @@ loadAllCatalogs();
             Lugar de expedición
           </label>
           <select name="LugarExpedicion" id="LugarExpedicion"
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors">
+            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+          >
             <option value="1">Principal</option>
             <option value="2">Sucursal uno</option>
           </select>
@@ -278,7 +245,8 @@ loadAllCatalogs();
           </label>
           <select name="UsoCFDI" id="UsoCFDI"
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            v-model="usageSelected">
+            v-model="usageSelected"
+          >
             <option v-for="cfdiUsage in cfdiUsages" :key="cfdiUsage.key" :value="cfdiUsage.key">
               {{ cfdiUsage.key }} - {{ cfdiUsage.name }}
             </option>
@@ -291,56 +259,60 @@ loadAllCatalogs();
           </label>
           <select name="Serie" id="Serie"
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            v-model="serialSelected.id">
+            v-model="serialSelected.id"
+          >
             <option :value="serialSelected.id">
               {{ serialSelected.name }}
             </option>
           </select>
         </div>
-        <!-- Métodos de pago -->
+        <!-- Select de Metodos de pago -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="MetodoPago">
             Métodos de pago <span class="text-red-500">*</span>
           </label>
           <select name="MetodoPago" id="MetodoPago"
             class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-            v-model="methodSelected">
-            <option v-for="method in paymentMethods" :key="method.key" :value="method.key">
-              {{ method.name }}
+            v-model="termSelected"
+          >
+            <option v-for="term in paymentTerms" :key="term.key" :value="term.key">
+              {{ term.name }}
             </option>
           </select>
         </div>
-      </div>
-
-      <!-- Sección con campos hardcodeados -->
-      <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+        <!-- Select de Formas de pago -->
         <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="receptorUID">
-            Receptor UID
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="FormaPago">
+            Formas de pago <span class="text-red-500">*</span>
           </label>
-          <input id="receptorUID" type="text" v-model="receptor.UID" readonly
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-gray-50 placeholder-gray-500 focus:outline-none transition-colors" />
+          <select name="FormaPago" id="FormaPago"
+            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            v-model="methodSelected"
+            :disabled="disableMethodSelect"
+          >
+            <template v-if="disableMethodSelect">
+              <option :value="null" disabled>Por definir</option>
+            </template>
+            <template v-else>
+              <option v-for="method in paymentMethods" :key="method.key" :value="method.key">
+                {{ method.name }}
+              </option>
+            </template>
+          </select>
         </div>
+        <!-- Select de Monedas de pago -->
         <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="residenciaFiscal">
-            Residencia Fiscal
+          <label class="block text-gray-700 text-sm font-bold mb-2" for="currency">
+            Moneda <span class="text-red-500">*</span>
           </label>
-          <input id="residenciaFiscal" type="text" v-model="receptor.ResidenciaFiscal" readonly
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-gray-50 placeholder-gray-500 focus:outline-none transition-colors" />
-        </div>
-        <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="formaPago">
-            Forma de Pago
-          </label>
-          <input id="formaPago" type="text" v-model="formaPago" readonly
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-gray-50 placeholder-gray-500 focus:outline-none transition-colors" />
-        </div>
-        <div>
-          <label class="block text-gray-700 text-sm font-bold mb-2" for="moneda">
-            Moneda
-          </label>
-          <input id="moneda" type="text" v-model="moneda" readonly
-            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-gray-50 placeholder-gray-500 focus:outline-none transition-colors" />
+          <select id="currency"
+            class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            v-model="currencySelected"
+          >
+            <option v-for="currency in paymentCurrencies" :key="currency.key" :value="currency.key">
+              {{ currency.key }} - {{ currency.name }}
+            </option>
+          </select>
         </div>
       </div>
 
@@ -350,52 +322,112 @@ loadAllCatalogs();
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
             <label class="block text-gray-700 text-sm font-bold mb-2" :for="'claveProdServ' + index">
-              Clave Prod/Serv
+              Clave SAT <span class="text-red-500">*</span>
             </label>
             <input :id="'claveProdServ' + index" type="text" v-model="concepto.ClaveProdServ"
               class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
           </div>
           <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" :for="'cantidad' + index">
-              Cantidad
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              :for="'cantidad' + index"
+            >
+              Cantidad <span class="text-red-500">*</span>
             </label>
-            <input :id="'cantidad' + index" type="number" min="0" v-model="concepto.Cantidad"
-              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+            <input
+              :id="'cantidad' + index"
+              type="number"
+              min="2"
+              v-model.number="concepto.Cantidad"
+              @input="
+                if (concepto.Cantidad <= 0) {
+                  concepto.Cantidad = null;
+                }
+              "
+              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
           </div>
           <div>
             <label class="block text-gray-700 text-sm font-bold mb-2" :for="'claveUnidad' + index">
-              Clave de Unidad
+              Clave de unidad <span class="text-red-500">*</span>
             </label>
-            <input :id="'claveUnidad' + index" type="text" v-model="concepto.ClaveUnidad"
-              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+            <select :id="'claveUnidad' + index"
+              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              v-model="concepto.ClaveUnidad"
+              @change="onUnidadChange(index)"
+             >
+              <option v-for="unit in unities" :key="unit.key" :value="unit.key">
+                {{ unit.key }} - {{ unit.name }}
+              </option>
+            </select>
           </div>
           <div>
             <label class="block text-gray-700 text-sm font-bold mb-2" :for="'unidad' + index">
-              Unidad
+              Unidad <span class="text-red-500">*</span>
             </label>
             <input :id="'unidad' + index" type="text" v-model="concepto.Unidad"
               class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
           </div>
           <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" :for="'valorUnitario' + index">
-              Valor Unitario
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              :for="'ValorUnitario' + index"
+            >
+              Precio unitario <span class="text-red-500">*</span>
             </label>
-            <input :id="'valorUnitario' + index" type="number" min="0" step="0.01" v-model="concepto.ValorUnitario"
-              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+            <input
+              :id="'ValorUnitario' + index"
+              type="number"
+              min="2"
+              v-model.number="concepto.ValorUnitario"
+              @input="
+                if (concepto.ValorUnitario <= 0) {
+                  concepto.ValorUnitario = null;
+                }
+              "
+              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            />
           </div>
           <div>
-            <label class="block text-gray-700 text-sm font-bold mb-2" :for="'descripcion' + index">
-              Descripción
+            <label
+              class="block text-gray-700 text-sm font-bold mb-2"
+              :for="'descripcion' + index"
+            >
+              Descripción <span class="text-red-500">*</span>
             </label>
-            <input :id="'descripcion' + index" type="text" v-model="concepto.Descripcion"
-              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+            <textarea
+              :id="'descripcion' + index"
+              v-model="concepto.Descripcion"
+              rows="4"
+              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+              placeholder="Escribe la descripción aquí..."
+            ></textarea>
           </div>
           <div>
             <label class="block text-gray-700 text-sm font-bold mb-2" :for="'objetoImp' + index">
-              Objeto de Impuesto
+              Objeto de Impuesto <span class="text-red-500">*</span>
             </label>
-            <input :id="'objetoImp' + index" type="text" v-model="concepto.ObjetoImp"
-              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+            <select
+              :id="'objetoImp' + index"
+              v-model="concepto.ObjetoImp"
+              class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
+            >
+              <option v-for="code in ['01','02','03','04','05','06','07','08']" :key="code" :value="code">
+                {{ code }} -
+                {{
+                  {
+                    '01': 'No objeto de impuesto',
+                    '02': 'Si objeto de impuesto',
+                    '03': 'Si objeto de impuesto y no obligado al desglose',
+                    '04': 'Si objeto de impuesto y no causa impuesto',
+                    '05': 'Sí objeto de impuesto, IVA crédito PODEBI',
+                    '06': 'Sí objeto del IVA, no traslado IVA',
+                    '07': 'No traslado del IVA, Sí desglose IEPS',
+                    '08': 'No traslado del IVA, No desglose IEPS'
+                  }[code]
+                }}
+              </option>
+            </select>
           </div>
         </div>
         <!-- Botón para eliminar concepto -->
