@@ -144,7 +144,7 @@ loadAllCatalogs();
 </script>
 
 <template>
-  <div class="container mx-auto">
+  <div class="max-w-4xl mx-auto">
     <!-- Título Principal -->
     <div class="bg-white w-full h-full pt-4 mb-6 flex flex-col justify-center items-center rounded-xl shadow">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>

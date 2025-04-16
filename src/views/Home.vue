@@ -185,128 +185,123 @@ onMounted(() => {
 
 function formatTotal(total) {
   const number = Number(total);
-  const formatted = number.toLocaleString('es-MX', { 
-    minimumFractionDigits: 2, 
-    maximumFractionDigits: 2 
+  const formatted = number.toLocaleString('es-MX', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
   });
   return "$" + formatted;
 }
 </script>
 
 <template>
-  <!-- Título Principal -->
-  <div class="bg-white w-full h-full pt-4 flex flex-col justify-center items-center rounded-xl shadow">
-    <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
-  </div>
-
-  <!-- Botón para Crear CFDI -->
-  <div class="w-full flex flex-col justify-center rounded-xl shadow my-7">
-    <router-link :to="{ name: 'Create' }" class="p-2.5 rounded-md bg-emerald-500 text-white font-bold text-center decoration-0">
-      Crear CFDI
-    </router-link>
-  </div>
-
-  <!-- Contenedor Principal CFDI -->
-  <div class="bg-white w-full h-full p-4 rounded-xl shadow">
-    <h2 class="text-xl font-medium text-gray-800 mb-4">Historial de CFDI</h2>
-
-    <!-- Input de Búsqueda -->
-    <div class="w-full flex justify-center mb-4">
-      <input 
-        type="text" 
-        placeholder="Buscar por Folio..."
-        @input="searchFolio"
-        class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors"
-      />
+  <div class="max-w-4xl mx-auto">
+    <!-- Título Principal -->
+    <div class="bg-white w-full h-full pt-4 flex flex-col justify-center items-center rounded-xl shadow">
+      <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
     </div>
 
-    <!-- Área de listado con Skeleton -->
-    <div class="h-[510px] overflow-y-auto">
-      <!-- Si está cargando, se muestran skeletons -->
-      <template v-if="loading">
-        <div v-for="n in 2" :key="n" class="animate-pulse flex flex-col gap-4 border-2 border-gray-300 rounded-md shadow my-4 p-4">
-          <div class="h-6 w-3/4 bg-gray-300 rounded"></div>
-          <div class="h-4 w-1/2 bg-gray-300 rounded"></div>
-          <div class="h-4 w-2/3 bg-gray-300 rounded"></div>
-          <div class="h-4 w-1/2 bg-gray-300 rounded"></div>
-          <div class="h-4 w-full bg-gray-300 rounded"></div>
-        </div>
-      </template>
+    <!-- Botón para Crear CFDI -->
+    <div class="w-full flex flex-col justify-center rounded-xl shadow my-7">
+      <router-link :to="{ name: 'Create' }"
+        class="p-2.5 rounded-md bg-emerald-500 text-white font-bold text-center decoration-0">
+        Crear CFDI
+      </router-link>
+    </div>
 
-      <!-- Cuando ya cargó la información -->
-      <template v-else>
-        <div v-for="(cfdi, index) in cfdis.data" 
-          :key="cfdi.uuid !== 'sin_uuid' && cfdi.uuid ? cfdi.uuid : cfdi.folio + '-' + index" 
-          :class="[
-            'border-2 rounded-md shadow my-4 p-4 flex',
-            cfdi.status !== 'cancelada' ? 'border-emerald-200' : 'border-red-200'
-          ]">
-          <!-- Columna Izquierda: Información -->
-          <div class="w-2/3">
-            <h3 
-              :class="[
-                'text-lg font-medium mb-2', 
+    <!-- Contenedor Principal CFDI -->
+    <div class="bg-white w-full h-full p-4 rounded-xl shadow">
+      <h2 class="text-xl font-medium text-gray-800 mb-4">Historial de CFDI</h2>
+
+      <!-- Input de Búsqueda -->
+      <div class="w-full flex justify-center mb-4">
+        <input type="text" placeholder="Buscar por Folio..." @input="searchFolio"
+          class="w-full max-w-md p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
+      </div>
+
+      <!-- Área de listado con Skeleton -->
+      <div class="h-[510px] overflow-y-auto">
+        <!-- Si está cargando, se muestran skeletons -->
+        <template v-if="loading">
+          <div v-for="n in 2" :key="n"
+            class="animate-pulse flex flex-col gap-4 border-2 border-gray-300 rounded-md shadow my-4 p-4">
+            <div class="h-6 w-3/4 bg-gray-300 rounded"></div>
+            <div class="h-4 w-1/2 bg-gray-300 rounded"></div>
+            <div class="h-4 w-2/3 bg-gray-300 rounded"></div>
+            <div class="h-4 w-1/2 bg-gray-300 rounded"></div>
+            <div class="h-4 w-full bg-gray-300 rounded"></div>
+          </div>
+        </template>
+
+        <!-- Cuando ya cargó la información -->
+        <template v-else>
+          <div v-for="(cfdi, index) in cfdis.data"
+            :key="cfdi.uuid !== 'sin_uuid' && cfdi.uuid ? cfdi.uuid : cfdi.folio + '-' + index" :class="[
+              'border-2 rounded-md shadow my-4 p-4 flex',
+              cfdi.status !== 'cancelada' ? 'border-emerald-200' : 'border-red-200'
+            ]">
+            <!-- Columna Izquierda: Información -->
+            <div class="w-2/3">
+              <h3 :class="[
+                'text-lg font-medium mb-2',
                 cfdi.status !== 'cancelada' ? 'text-emerald-500' : 'text-red-500'
               ]">
-              Tipo de CFDI: {{ cfdi.cfdi_type }}
-            </h3>
-            <p><span class="font-semibold">Folio:</span> {{ cfdi.folio }}</p>
-            <p><span class="font-semibold">Serie:</span> {{ cfdi.serial }}</p>
-            <p class="font-bold"><span class="font-semibold">Total:</span> {{ formatTotal(cfdi.total) }}</p>
-            <p class="my-2"><span class="font-semibold">Fecha:</span> {{ cfdi.date }}</p>
-            <p :class="[ cfdi.status !== 'cancelada' ? 'text-emerald-500' : 'text-red-500' ]">
-              <span class="font-semibold">Estado:</span> {{ cfdi.status }}
-            </p>
-          </div>
+                Tipo de CFDI: {{ cfdi.cfdi_type }}
+              </h3>
+              <p><span class="font-semibold">Folio:</span> {{ cfdi.folio }}</p>
+              <p><span class="font-semibold">Serie:</span> {{ cfdi.serial }}</p>
+              <p class="font-bold"><span class="font-semibold">Total:</span> {{ formatTotal(cfdi.total) }}</p>
+              <p class="my-2"><span class="font-semibold">Fecha:</span> {{ cfdi.date }}</p>
+              <p :class="[cfdi.status !== 'cancelada' ? 'text-emerald-500' : 'text-red-500']">
+                <span class="font-semibold">Estado:</span> {{ cfdi.status }}
+              </p>
+            </div>
 
-          <!-- Columna Derecha: Acciones -->
-          <div :class="[
-              'w-1/3 flex flex-col justify-around items-center border-l pl-4', 
+            <!-- Columna Derecha: Acciones -->
+            <div :class="[
+              'w-1/3 flex flex-col justify-around items-center border-l pl-4',
               cfdi.status !== 'cancelada' ? 'border-emerald-500' : 'border-red-500'
-              ]">
-            <!-- Acción: Ver CFDI -->
-            <router-link v-if="cfdi.links.self" :to="{ name: 'Cfdi', params: { uuid: cfdi.uuid } }"
-                    class="flex flex-col justify-center items-center text-blue-500 hover:text-blue-700 transition">
-              <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
-              <span class="text-sm mt-1">Ver</span>
-            </router-link>
+            ]">
+              <!-- Acción: Ver CFDI -->
+              <router-link v-if="cfdi.links.self" :to="{ name: 'Cfdi', params: { uuid: cfdi.uuid } }"
+                class="flex flex-col justify-center items-center text-blue-500 hover:text-blue-700 transition">
+                <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
+                <span class="text-sm mt-1">Ver</span>
+              </router-link>
 
-            <!-- Acción: Enviar email -->
-            <button v-if="cfdi.links.email" v-on:click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
-                    class="flex flex-col justify-center items-center text-emerald-500 hover:text-emerald-700 transition">
-              <FontAwesomeIcon :icon="['fas', 'envelope']" class="text-2xl" />
-              <span class="text-sm mt-1">Enviar</span>
-            </button>
-            
-            <!-- Acción: Cancelar (solo si es posible cancelar el CFDI) -->
-            <button v-if="cfdi.links.cancel" v-on:click="cancelCfdi(cfdi.uid, cfdi.links.cancel)"
-                    class="flex flex-col justify-center items-center text-red-500 hover:text-red-700 transition">
-              <FontAwesomeIcon :icon="['fas', 'times-circle']" class="text-2xl" />
-              <span class="text-sm mt-1">Cancelar</span>
-            </button>
+              <!-- Acción: Enviar email -->
+              <button v-if="cfdi.links.email" v-on:click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
+                class="flex flex-col justify-center items-center text-emerald-500 hover:text-emerald-700 transition">
+                <FontAwesomeIcon :icon="['fas', 'envelope']" class="text-2xl" />
+                <span class="text-sm mt-1">Enviar</span>
+              </button>
+
+              <!-- Acción: Cancelar (solo si es posible cancelar el CFDI) -->
+              <button v-if="cfdi.links.cancel" v-on:click="cancelCfdi(cfdi.uid, cfdi.links.cancel)"
+                class="flex flex-col justify-center items-center text-red-500 hover:text-red-700 transition">
+                <FontAwesomeIcon :icon="['fas', 'times-circle']" class="text-2xl" />
+                <span class="text-sm mt-1">Cancelar</span>
+              </button>
+            </div>
           </div>
-        </div>
-      </template>
+        </template>
+      </div>
     </div>
-  </div>
 
-  <!-- Selector de items por página -->
-  <div class="flex items-center justify-between space-x-4 mt-5 p-4 bg-gray-50 rounded-xl shadow">
-    <label for="itemsPerPage" class="text-gray-700 font-medium">
-      Items por página:
-    </label>
-    
-    <select 
-      id="itemsPerPage"
-      v-model.number="list_page"
-      class="block w-32 py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition"
-    >
-      <option value="5">5</option>
-      <option value="10">10</option>
-      <option value="20">20</option>
-      <option value="50">50</option>
-      <option :value="cfdis.total">{{ cfdis.total }} (Todos)</option>
-    </select>
+    <!-- Selector de items por página -->
+    <div class="flex items-center justify-between space-x-4 mt-5 p-4 bg-gray-50 rounded-xl shadow">
+      <label for="itemsPerPage" class="text-gray-700 font-medium">
+        Items por página:
+      </label>
+
+      <select id="itemsPerPage" v-model.number="list_page"
+        class="block w-32 py-2 px-3 border border-gray-300 bg-white rounded-md shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 transition">
+        <option value="5">5</option>
+        <option value="10">10</option>
+        <option value="20">20</option>
+        <option value="50">50</option>
+        <option :value="cfdis.total">{{ cfdis.total }} (Todos)</option>
+      </select>
+    </div>
   </div>
 </template>
 
