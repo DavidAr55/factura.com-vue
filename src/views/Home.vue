@@ -222,7 +222,7 @@ function formatTotal(total) {
       <div class="h-[510px] overflow-y-auto">
         <!-- Si está cargando, se muestran skeletons -->
         <template v-if="loading">
-          <div v-for="n in 2" :key="n"
+          <div v-for="n in 3" :key="n"
             class="animate-pulse flex flex-col gap-4 border-2 border-gray-300 rounded-md shadow my-4 p-4">
             <div class="h-6 w-3/4 bg-gray-300 rounded"></div>
             <div class="h-4 w-1/2 bg-gray-300 rounded"></div>
@@ -263,14 +263,14 @@ function formatTotal(total) {
             ]">
               <!-- Acción: Ver CFDI -->
               <router-link v-if="cfdi.links.self" :to="{ name: 'Show', params: { uuid: cfdi.uuid } }"
-                class="flex flex-col justify-center items-center text-blue-500 hover:text-blue-700 transition">
+                class="flex flex-col justify-center items-center text-green-400 hover:text-green-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
                 <span class="text-sm mt-1">Ver</span>
               </router-link>
 
               <!-- Acción: Enviar email -->
               <button v-if="cfdi.links.email" v-on:click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
-                class="flex flex-col justify-center items-center text-emerald-500 hover:text-emerald-700 transition">
+                class="flex flex-col justify-center items-center text-emerald-600 hover:text-emerald-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'envelope']" class="text-2xl" />
                 <span class="text-sm mt-1">Enviar</span>
               </button>
