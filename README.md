@@ -201,5 +201,5 @@ npm run dev
 
 ## Autor
 
-**David Arvizu**  
+**David Arturo Loera Olmos**  
 [GitHub: DavidAr55](https://github.com/DavidAr55)
