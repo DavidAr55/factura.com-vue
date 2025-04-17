@@ -45,12 +45,12 @@ onMounted(() => {
 
 <template>
   <div class="w-full h-full p-3">
-    <!-- Caso de error -->
+    <!-- Error case -->
     <div v-if="errorMessage" class="text-red-600 w-full h-[97vh] flex justify-center items-center">
       <h3 class="text-xl text-center font-bold mb-4">{{ errorMessage }}</h3>
     </div>
 
-    <!-- Estado de carga -->
+    <!-- Loading state -->
     <div v-else-if="isLoading" class="w-full h-[97vh] flex justify-center items-center">
       <svg class="animate-spin h-8 w-8 text-gray-800" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
