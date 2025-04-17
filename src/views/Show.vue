@@ -3,7 +3,7 @@ import { ref, watch } from 'vue';
 import { useRoute } from 'vue-router';
 import Swal from 'sweetalert2';
 
-// Parámetro recibido en la ruta
+// Route parameters
 const route = useRoute();
 const uuid = ref(route.params.uuid);
 
@@ -15,7 +15,7 @@ watch(
   }
 );
 
-// Constantes
+// Constants
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_KEY = import.meta.env.VITE_API_KEY;
 const SECRET  = import.meta.env.VITE_API_SECRET;
@@ -23,7 +23,7 @@ const SECRET  = import.meta.env.VITE_API_SECRET;
 const cfdi = ref({});
 const loading = ref(true);
 
-// Función para cargar el CFDI
+// Load CFDI
 const loadCfdi = async () => {
   try {
     loading.value = true;
@@ -46,7 +46,7 @@ const loadCfdi = async () => {
 
 loadCfdi();
 
-// Función para enviar el CFDI por email usando Swal2
+// Send CFDI by email using Swal2
 const sendCfdiByEmail = async (uid, link) => {
   try {
     Swal.fire({
@@ -94,9 +94,9 @@ const sendCfdiByEmail = async (uid, link) => {
   }
 };
 
-// Función para cancelar el CFDI usando Swal2 con input select
+// Cancel CFDI using Swal2 with input select
 const cancelCfdi = async (uid, link) => {
-  // Seleccionar el motivo de cancelación
+  // Select cancellation reason
   const { value: motivo } = await Swal.fire({
     title: 'Seleccione el motivo de cancelación',
     input: 'select',
@@ -131,7 +131,7 @@ const cancelCfdi = async (uid, link) => {
     substituteFolio: replacementUuid
   };
 
-  // Mostrar loader mientras se procesa la cancelación
+  // Show loader while processing cancellation
   Swal.fire({
     title: 'Cancelando CFDI...',
     html: 'Por favor, espera',
@@ -141,7 +141,7 @@ const cancelCfdi = async (uid, link) => {
     }
   });
 
-  // Petición para cancelar el CFDI
+  // Cancel CFDI
   try {
     const response = await fetch(link, {
       method: 'POST',
@@ -179,19 +179,19 @@ const cancelCfdi = async (uid, link) => {
     });
   }
 
-  // Recargar la información actualizada del CFDI
+  // Reload updated CFDI information
   loadCfdi();
 };
 </script>
 
 <template>
   <div class="max-w-4xl mx-auto">
-    <!-- Título Principal -->
+    <!-- Main title -->
     <div class="bg-white w-full h-full pt-4 mb-6 flex flex-col justify-center items-center rounded-xl shadow">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
     </div>
 
-    <!-- Skeleton Loader o Contenido -->
+    <!-- Skeleton Loader or Content -->
     <div v-if="loading" class="space-y-4">
       <!-- Card Skeleton -->
       <div class="animate-pulse bg-white rounded-xl shadow p-6">
@@ -221,7 +221,7 @@ const cancelCfdi = async (uid, link) => {
       </div>
     </div>
 
-    <!-- Contenido con Información del CFDI -->
+    <!-- Content with CFDI Information -->
     <div v-else class="bg-white rounded-xl shadow p-6">
       <h2 class="text-2xl font-semibold text-gray-800 mb-4">Detalle del CFDI</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -251,7 +251,7 @@ const cancelCfdi = async (uid, link) => {
         </div>
       </div>
 
-      <!-- Botones de Acción con estilos SweetAlert2 -->
+      <!-- Action buttons with SweetAlert2 styles -->
       <div class="mt-6 flex flex-col sm:flex-row gap-4">
         <button @click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
           class="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-6 rounded shadow">

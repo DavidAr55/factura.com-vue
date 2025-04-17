@@ -5,7 +5,6 @@ import { library } from '@fortawesome/fontawesome-svg-core'
 import { faTimesCircle, faEnvelope, faEye } from '@fortawesome/free-solid-svg-icons'
 import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 
-// Agrega los íconos a la librería
 library.add(faTimesCircle, faEnvelope, faEye)
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL;
@@ -17,12 +16,14 @@ let allCfdis = [];
 const list_page = ref(10);
 const loading = ref(true);
 
+// Load CFDIs from API endpoint
 const loadCfdis = async () => {
   const url = new URL(`${BASE_URL}/v1/cfdi`);
   url.searchParams.append('per_page', list_page.value);
 
   try {
     loading.value = true;
+    // We send a GET request to the API endpoint with the headers required by the API
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
@@ -54,6 +55,7 @@ const searchFolio = (event) => {
   }
 };
 
+// Send CFDI by email using Swal2
 const sendCfdiByEmail = async (uid, link) => {
   try {
     Swal.fire({
@@ -102,6 +104,7 @@ const sendCfdiByEmail = async (uid, link) => {
   }
 };
 
+// Cancel CFDI using Swal2
 const cancelCfdi = async (uid, link) => {
   const { value: motivo } = await Swal.fire({
     title: 'Seleccione el motivo de cancelación',
@@ -149,7 +152,11 @@ const cancelCfdi = async (uid, link) => {
   try {
     const response = await fetch(link, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
+      },
       body: JSON.stringify(data)
     });
 
@@ -182,6 +189,7 @@ const cancelCfdi = async (uid, link) => {
   loadCfdis();
 };
 
+// Watch for changes in list_page
 watch(list_page, () => {
   loadCfdis();
 });
@@ -202,12 +210,12 @@ function formatTotal(total) {
 
 <template>
   <div class="max-w-4xl mx-auto">
-    <!-- Título Principal -->
+    <!-- Main title -->
     <div class="bg-white w-full h-full pt-4 flex flex-col justify-center items-center rounded-xl shadow">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
     </div>
 
-    <!-- Botón para Crear CFDI -->
+    <!-- Button to create CFDI -->
     <div class="w-full flex flex-col justify-center rounded-xl shadow my-7">
       <router-link :to="{ name: 'Create' }"
         class="p-2.5 rounded-md bg-emerald-500 text-white font-bold text-center decoration-0">
@@ -215,19 +223,19 @@ function formatTotal(total) {
       </router-link>
     </div>
 
-    <!-- Contenedor Principal CFDI -->
+    <!-- Main container CFDI -->
     <div class="bg-white w-full h-full p-4 rounded-xl shadow">
       <h2 class="text-xl font-medium text-gray-800 mb-4">Historial de CFDI</h2>
 
-      <!-- Input de Búsqueda -->
+      <!-- Search input -->
       <div class="w-full flex justify-center mb-4">
         <input type="text" placeholder="Buscar por Folio..." @input="searchFolio"
           class="w-full p-2 border rounded-lg border-gray-300 bg-transparent placeholder-gray-500 focus:outline-none focus:border-emerald-500 transition-colors" />
       </div>
 
-      <!-- Área de listado con Skeleton -->
+      <!-- List area with Skeleton -->
       <div class="h-[510px] overflow-y-auto">
-        <!-- Si está cargando, se muestran skeletons -->
+        <!-- If loading, show skeletons -->
         <template v-if="loading">
           <div v-for="n in 3" :key="n"
             class="animate-pulse flex flex-col gap-4 border-2 border-gray-300 rounded-md shadow my-4 p-4">
@@ -239,14 +247,14 @@ function formatTotal(total) {
           </div>
         </template>
 
-        <!-- Cuando ya cargó la información -->
+        <!-- When the data has loaded -->
         <template v-else>
           <div v-for="(cfdi, index) in cfdis.data"
             :key="cfdi.uuid !== 'sin_uuid' && cfdi.uuid ? cfdi.uuid : cfdi.folio + '-' + index" :class="[
               'border-2 rounded-md shadow my-4 p-4 flex',
               cfdi.status !== 'cancelada' ? 'border-emerald-200' : 'border-red-200'
             ]">
-            <!-- Columna Izquierda: Información -->
+            <!-- Left column: Information -->
             <div class="w-2/3">
               <h3 :class="[
                 'text-lg font-medium mb-2',
@@ -263,26 +271,26 @@ function formatTotal(total) {
               </p>
             </div>
 
-            <!-- Columna Derecha: Acciones -->
+            <!-- Right column: Actions -->
             <div :class="[
               'w-1/3 flex flex-col justify-around items-center border-l pl-4',
               cfdi.status !== 'cancelada' ? 'border-emerald-500' : 'border-red-500'
             ]">
-              <!-- Acción: Ver CFDI -->
+              <!-- Action: View CFDI -->
               <router-link v-if="cfdi.links.self" :to="{ name: 'Show', params: { uuid: cfdi.uuid } }"
                 class="flex flex-col justify-center items-center text-green-400 hover:text-green-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'eye']" class="text-2xl" />
                 <span class="text-sm mt-1">Ver</span>
               </router-link>
 
-              <!-- Acción: Enviar email -->
+              <!-- Action: Send email -->
               <button v-if="cfdi.links.email" v-on:click="sendCfdiByEmail(cfdi.uid, cfdi.links.email)"
                 class="flex flex-col justify-center items-center text-emerald-600 hover:text-emerald-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'envelope']" class="text-2xl" />
                 <span class="text-sm mt-1">Enviar</span>
               </button>
 
-              <!-- Acción: Cancelar (solo si es posible cancelar el CFDI) -->
+              <!-- Action: Cancel (only if possible to cancel the CFDI) -->
               <button v-if="cfdi.links.cancel" v-on:click="cancelCfdi(cfdi.uid, cfdi.links.cancel)"
                 class="flex flex-col justify-center items-center text-red-500 hover:text-red-700 transition">
                 <FontAwesomeIcon :icon="['fas', 'times-circle']" class="text-2xl" />
@@ -294,7 +302,7 @@ function formatTotal(total) {
       </div>
     </div>
 
-    <!-- Selector de items por página -->
+    <!-- Page items selector -->
     <div class="flex items-center justify-between space-x-4 mt-5 p-4 bg-gray-50 rounded-xl shadow">
       <label for="itemsPerPage" class="text-gray-700 font-medium">
         Items por página:

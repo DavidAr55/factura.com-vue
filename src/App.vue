@@ -58,7 +58,7 @@ onMounted(() => {
       </svg>
     </div>
 
-    <!-- Estado saludable del servidor -->
+    <!-- Server status is healthy -->
     <div v-else-if="health">
       <router-view />
     </div>

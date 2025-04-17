@@ -9,7 +9,7 @@ const BASE_URL = import.meta.env.VITE_API_BASE_URL;
 const API_KEY = import.meta.env.VITE_API_KEY;
 const SECRET  = import.meta.env.VITE_API_SECRET;
 
-// Listas reactivas
+// reactive variables
 const cfdiTypes = ref([]);
 const clients = ref([]);
 const cfdiUsages = ref([]);
@@ -18,7 +18,7 @@ const paymentMethods = ref([]);
 const paymentCurrencies = ref([]);
 const unities = ref([]);
 
-// Selecciones dinámicas
+// dynamic selections
 const typeSelected = ref(null);
 const serialSelected = reactive({ id: '', name: '' });
 const clientSelected = ref(null);
@@ -28,13 +28,13 @@ const methodSelected = ref(null);
 const currencySelected = ref(null);
 const unitySelected = ref(null);
 
-// Estado de carga
+// loading state
 const loading = ref(true);
 
-// Formulario dinámico
+// dynamic form
 const form = reactive({ Conceptos: [] });
 
-// Solo campo hardcodeado: Receptor UID
+// hardcode receiver UID
 const receptor = reactive({
   UID: '60cba20d024df'
 });
@@ -53,7 +53,7 @@ async function fetchJson(path) {
   return res.json();
 }
 
-// Carga catálogos
+// Load catalogs
 async function loadAllCatalogs() {
   try {
     const [typesData, clientsData, usagesData, termsData, methodsData, currencyData, unitData] =
@@ -75,7 +75,7 @@ async function loadAllCatalogs() {
     paymentCurrencies.value = currencyData;
     unities.value = unitData;
 
-    // Inicializaciones dinámicas
+    // dynamic initializations
     if (typesData.length) {
       const d = typesData[0];
       typeSelected.value = d.SerieType;
@@ -87,7 +87,7 @@ async function loadAllCatalogs() {
     if (termsData.length) termSelected.value = termsData[0].key;
     if (methodsData.length) methodSelected.value = methodsData[0].key;
 
-    // Moneda predeterminada MXN
+    // Default currency MXN
     const defCur = currencyData.find(c => c.key === 'MXN') || currencyData[0];
     currencySelected.value = defCur?.key || null;
 
@@ -111,7 +111,7 @@ watch(termSelected, newTerm => {
   if (newTerm !== 'PUE') methodSelected.value = null;
 });
 
-// Conceptos dinámicos
+// Dynamic Conceptos
 const addConcepto = () => {
   form.Conceptos.push({
     ClaveProdServ: '',
@@ -127,7 +127,7 @@ const removeConcepto = idx => {
   if (form.Conceptos.length > 1) form.Conceptos.splice(idx, 1);
 };
 
-// Envío
+// Submit form
 const submitForm = async () => {
   const payload = {
     Receptor: receptor,
@@ -174,12 +174,12 @@ loadAllCatalogs();
 
 <template>
   <div class="max-w-4xl mx-auto">
-    <!-- Título Principal -->
+    <!-- Main title -->
     <div class="bg-white w-full h-full pt-4 mb-6 flex flex-col justify-center items-center rounded-xl shadow">
       <h1 class="text-3xl font-bold text-gray-800 mb-4">Factura.com</h1>
     </div>
 
-    <!-- Skeleton Form mientras carga la información -->
+    <!-- Skeleton Form while loading -->
     <div v-if="loading" class="space-y-6">
       <div class="space-y-4 bg-white p-6 rounded shadow">
         <div class="h-6 bg-gray-200 rounded w-2/5 animate-pulse"></div>
@@ -207,12 +207,12 @@ loadAllCatalogs();
       </div>
     </div>
 
-    <!-- Formulario principal -->
+    <!-- Main form -->
     <form v-else @submit.prevent="submitForm" class="bg-white shadow-md rounded-xl p-4">
-      <!-- Sección Datos del Receptor y CFDI -->
+      <!-- Receiver and CFDI data section -->
       <h2 class="text-xl font-medium text-gray-800 mb-4">Nuevo CFDI 4.0</h2>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-        <!-- Tipo de CFDI -->
+        <!-- CFDI type -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="TipoDocumento">
             Tipo de CFDI <span class="text-red-500">*</span>
@@ -226,7 +226,7 @@ loadAllCatalogs();
             </option>
           </select>
         </div>
-        <!-- Cliente (seleccionado pero no enviado al backend) -->
+        <!-- Client (selected but not sent to backend) -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="cliente">
             Cliente <span class="text-red-500">*</span>
@@ -240,7 +240,7 @@ loadAllCatalogs();
             </option>
           </select>
         </div>
-        <!-- Lugar de Expedición -->
+        <!-- Place of issue -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="LugarExpedicion">
             Lugar de expedición
@@ -252,7 +252,7 @@ loadAllCatalogs();
             <option value="2">Sucursal uno</option>
           </select>
         </div>
-        <!-- Uso de CFDI -->
+        <!-- CFDI usage -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="UsoCFDI">
             Uso de CFDI <span class="text-red-500">*</span>
@@ -266,7 +266,7 @@ loadAllCatalogs();
             </option>
           </select>
         </div>
-        <!-- Serie del CFDI -->
+        <!-- CFDI series -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="Serie">
             Serie <span class="text-red-500">*</span>
@@ -280,7 +280,7 @@ loadAllCatalogs();
             </option>
           </select>
         </div>
-        <!-- Select de Metodos de pago -->
+        <!-- Payment methods -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="MetodoPago">
             Métodos de pago <span class="text-red-500">*</span>
@@ -294,7 +294,7 @@ loadAllCatalogs();
             </option>
           </select>
         </div>
-        <!-- Select de Formas de pago -->
+        <!-- Payment methods -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="FormaPago">
             Formas de pago <span class="text-red-500">*</span>
@@ -314,7 +314,7 @@ loadAllCatalogs();
             </template>
           </select>
         </div>
-        <!-- Select de Monedas de pago -->
+        <!-- Payment currencies -->
         <div>
           <label class="block text-gray-700 text-sm font-bold mb-2" for="currency">
             Moneda <span class="text-red-500">*</span>
@@ -330,7 +330,7 @@ loadAllCatalogs();
         </div>
       </div>
 
-      <!-- Sección Conceptos -->
+      <!-- Conceptos section -->
       <h2 class="text-xl font-semibold">Conceptos</h2>
       <div v-for="(concepto, index) in form.Conceptos" :key="index" class="border border-emerald-300 p-4 rounded mb-4">
         <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -465,6 +465,4 @@ loadAllCatalogs();
   </div>
 </template>
 
-<style scoped>
-/* Puedes agregar estilos adicionales si es necesario */
-</style>
+<style scoped></style>
