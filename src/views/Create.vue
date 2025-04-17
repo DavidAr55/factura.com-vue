@@ -4,7 +4,10 @@ import { useRouter } from 'vue-router';
 import Swal from 'sweetalert2';
 
 const router = useRouter();
-const BASE_URL = "http://127.0.0.1:8000/api";
+
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_KEY = import.meta.env.VITE_API_KEY;
+const SECRET  = import.meta.env.VITE_API_SECRET;
 
 // Listas reactivas
 const cfdiTypes = ref([]);
@@ -39,7 +42,12 @@ const receptor = reactive({
 // Helper fetch
 async function fetchJson(path) {
   const res = await fetch(`${BASE_URL}${path}`, {
-    headers: { 'Content-Type': 'application/json' }
+    method: 'GET',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${API_KEY}`,
+      'F-Api-Secret': SECRET
+    }
   });
   if (!res.ok) throw new Error(`Error ${res.status} en ${path}`);
   return res.json();
@@ -135,7 +143,13 @@ const submitForm = async () => {
   try {
     Swal.fire({ title: 'Generando CFDI…', allowOutsideClick: false, didOpen: () => Swal.showLoading() });
     const res = await fetch(`${BASE_URL}/v1/cfdi`, {
-      method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload)
+      method: 'POST', 
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
+      },
+      body: JSON.stringify(payload)
     });
     if (!res.ok) throw new Error(res.statusText);
     const data = await res.json();

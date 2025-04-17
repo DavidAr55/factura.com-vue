@@ -16,7 +16,10 @@ watch(
 );
 
 // Constantes
-const BASE_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_KEY = import.meta.env.VITE_API_KEY;
+const SECRET  = import.meta.env.VITE_API_SECRET;
+
 const cfdi = ref({});
 const loading = ref(true);
 
@@ -25,8 +28,11 @@ const loadCfdi = async () => {
   try {
     loading.value = true;
     const response = await fetch(`${BASE_URL}/v1/cfdi/${uuid.value}`, {
+      method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
       }
     });
     const data = await response.json();
@@ -55,7 +61,9 @@ const sendCfdiByEmail = async (uid, link) => {
     const response = await fetch(link, {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
       }
     });
 
@@ -137,7 +145,11 @@ const cancelCfdi = async (uid, link) => {
   try {
     const response = await fetch(link, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
+      },
       body: JSON.stringify(data)
     });
 

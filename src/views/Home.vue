@@ -8,7 +8,10 @@ import { FontAwesomeIcon } from '@fortawesome/vue-fontawesome'
 // Agrega los íconos a la librería
 library.add(faTimesCircle, faEnvelope, faEye)
 
-const BASE_URL = "http://127.0.0.1:8000/api";
+const BASE_URL = import.meta.env.VITE_API_BASE_URL;
+const API_KEY = import.meta.env.VITE_API_KEY;
+const SECRET  = import.meta.env.VITE_API_SECRET;
+
 const cfdis = ref({});
 let allCfdis = [];
 const list_page = ref(10);
@@ -23,7 +26,9 @@ const loadCfdis = async () => {
     const response = await fetch(url.toString(), {
       method: 'GET',
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
       }
     });
 
@@ -63,7 +68,9 @@ const sendCfdiByEmail = async (uid, link) => {
     const response = await fetch(link, {
       method: "POST",
       headers: {
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${API_KEY}`,
+        'F-Api-Secret': SECRET
       }
     });
 
